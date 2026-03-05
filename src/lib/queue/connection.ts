@@ -17,6 +17,8 @@ export function getBullMqConnection(): ConnectionOptions {
     username: parsedUrl.username || undefined,
     password: parsedUrl.password || undefined,
     db: Number.isFinite(dbNumber) ? dbNumber : undefined,
-    tls: parsedUrl.protocol === "rediss:" ? {} : undefined
+    tls: parsedUrl.protocol === "rediss:" ? {} : undefined,
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false
   };
 }
