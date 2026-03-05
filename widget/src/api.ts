@@ -35,6 +35,8 @@ export type TryOnStatusResponse =
       error: string;
     };
 
+const DEFAULT_MAX_POLL_ATTEMPTS = 60;
+
 export function getPollDelayMs(retryAfterHeader: string | null): number {
   const parsedSeconds = retryAfterHeader ? Number(retryAfterHeader) : Number.NaN;
   if (!Number.isFinite(parsedSeconds) || parsedSeconds <= 0) {
@@ -83,10 +85,17 @@ export async function pollTryOnUntilSettled(input: {
   apiKey: string;
   pollUrl: string;
   onProgress?: (status: "PENDING" | "PROCESSING") => void;
+  maxAttempts?: number;
 }): Promise<TryOnStatusResponse> {
   const absolutePollUrl = resolvePollUrl(input.apiBase, input.pollUrl);
+  const maxAttempts =
+    typeof input.maxAttempts === "number" && input.maxAttempts > 0
+      ? Math.floor(input.maxAttempts)
+      : DEFAULT_MAX_POLL_ATTEMPTS;
+  let attempts = 0;
 
-  while (true) {
+  while (attempts < maxAttempts) {
+    attempts += 1;
     const response = await fetch(absolutePollUrl, {
       method: "GET",
       headers: {
@@ -103,6 +112,9 @@ export async function pollTryOnUntilSettled(input: {
 
     if (payload.data.status === "PENDING" || payload.data.status === "PROCESSING") {
       input.onProgress?.(payload.data.status);
+      if (attempts >= maxAttempts) {
+        break;
+      }
       const delay = getPollDelayMs(response.headers.get("Retry-After"));
       await new Promise((resolve) => setTimeout(resolve, delay));
       continue;
@@ -110,4 +122,6 @@ export async function pollTryOnUntilSettled(input: {
 
     return payload;
   }
+
+  return { error: "Request timed out, please try again" };
 }
