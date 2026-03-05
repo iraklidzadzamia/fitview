@@ -20,6 +20,24 @@ import { TRY_ON_JOB_NAME, tryOnQueue } from "@/lib/queue/tryon-queue";
 
 export const runtime = "nodejs";
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, x-api-key",
+  "Access-Control-Max-Age": "86400"
+};
+
+function corsJson(body: object, init?: { status?: number; headers?: Record<string, string> }) {
+  return NextResponse.json(body, {
+    status: init?.status,
+    headers: { ...CORS_HEADERS, ...init?.headers }
+  });
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+}
+
 const requestBodySchema = z.object({
   catalogItemId: z.string().min(1)
 });
@@ -86,14 +104,14 @@ export async function POST(request: NextRequest) {
     // 1) API key hash lookup
     const store = await findStoreByApiKey(request);
     if (!store) {
-      return NextResponse.json({ error: "Invalid API key" }, { status: 401 });
+      return corsJson({ error: "Invalid API key" }, { status: 401 });
     }
 
     // 2) Rate limit (storeId + IP)
     const rateLimitKey = `${store.id}:${getClientIp(request)}`;
     const rateResult = publicTryOnRateLimiter.consume(rateLimitKey);
     if (!rateResult.allowed) {
-      return NextResponse.json(
+      return corsJson(
         { error: "Rate limit exceeded" },
         {
           status: 429,
@@ -109,7 +127,7 @@ export async function POST(request: NextRequest) {
       await reserveTryOnUsageSlot(store.id, store.plan);
     } catch (error) {
       if (error instanceof UsageLimitReachedError) {
-        return NextResponse.json({ error: "Monthly try-on limit reached" }, { status: 429 });
+        return corsJson({ error: "Monthly try-on limit reached" }, { status: 429 });
       }
       throw error;
     }
@@ -117,13 +135,13 @@ export async function POST(request: NextRequest) {
     // 4) Exact CORS origin match
     const requestOrigin = request.headers.get("origin");
     if (!isOriginAllowed(store.allowedOrigins, requestOrigin)) {
-      return NextResponse.json({ error: "Origin not allowed" }, { status: 403 });
+      return corsJson({ error: "Origin not allowed" }, { status: 403 });
     }
 
     // 5) Zod + file constraints
     const parsedRequest = await parseTryOnRequest(request);
     if ("error" in parsedRequest) {
-      return NextResponse.json({ error: parsedRequest.error }, { status: 400 });
+      return corsJson({ error: parsedRequest.error }, { status: 400 });
     }
 
     const photoArrayBuffer = await parsedRequest.data.personPhoto.arrayBuffer();
@@ -136,7 +154,7 @@ export async function POST(request: NextRequest) {
         parsedRequest.data.personPhoto.type || "application/octet-stream"
       );
     } catch {
-      return NextResponse.json({ error: "Unsupported image file" }, { status: 400 });
+      return corsJson({ error: "Unsupported image file" }, { status: 400 });
     }
 
     const personPhotoUrl = await uploadToS3(
@@ -163,7 +181,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!catalogItem) {
-      return NextResponse.json({ error: "Catalog item not found" }, { status: 404 });
+      return corsJson({ error: "Catalog item not found" }, { status: 404 });
     }
 
     const tryOnRecord = await prisma.tryOn.create({
@@ -197,7 +215,7 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    return NextResponse.json(
+    return corsJson(
       {
         data: {
           id: tryOnRecord.id,
@@ -210,6 +228,6 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error("Failed to create try-on request", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return corsJson({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -6,10 +6,21 @@ import { hashApiKey } from "@/lib/security/api-key";
 
 export const runtime = "nodejs";
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, x-api-key"
+};
+
 const POLL_HEADERS = {
+  ...CORS_HEADERS,
   "Retry-After": String(POLL_RETRY_AFTER_SECONDS),
   "Cache-Control": "no-store"
 };
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+}
 
 async function findStoreIdByApiKey(request: NextRequest): Promise<string | null> {
   const apiKey = request.headers.get("x-api-key");
