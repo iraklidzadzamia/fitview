@@ -9,31 +9,31 @@ export type TryOnCreateResponse = {
 
 export type TryOnStatusResponse =
   | {
-      data: {
-        id: string;
-        status: "PENDING" | "PROCESSING";
-        retryAfterSec: number;
-      };
-    }
-  | {
-      data: {
-        id: string;
-        status: "COMPLETED";
-        resultImageUrl: string;
-        resultExpiresAt: string | null;
-      };
-    }
-  | {
-      data: {
-        id: string;
-        status: "FAILED";
-        errorMessage: string;
-        canRetry: boolean;
-      };
-    }
-  | {
-      error: string;
+    data: {
+      id: string;
+      status: "PENDING" | "PROCESSING";
+      retryAfterSec: number;
     };
+  }
+  | {
+    data: {
+      id: string;
+      status: "COMPLETED";
+      resultImageUrl: string;
+      resultExpiresAt: string | null;
+    };
+  }
+  | {
+    data: {
+      id: string;
+      status: "FAILED";
+      errorMessage: string;
+      canRetry: boolean;
+    };
+  }
+  | {
+    error: string;
+  };
 
 const DEFAULT_MAX_POLL_ATTEMPTS = 60;
 
@@ -49,6 +49,12 @@ export function getPollDelayMs(retryAfterHeader: string | null): number {
 function resolvePollUrl(apiBase: string, pollUrl: string) {
   if (pollUrl.startsWith("http://") || pollUrl.startsWith("https://")) {
     return pollUrl;
+  }
+
+  if (pollUrl.startsWith("/")) {
+    // Absolute path — use just the origin, not full apiBase
+    const url = new URL(apiBase);
+    return `${url.origin}${pollUrl}`;
   }
 
   return `${apiBase.replace(/\/+$/, "")}/${pollUrl.replace(/^\/+/, "")}`;
