@@ -21,6 +21,7 @@ export type WidgetElements = {
   downloadLink: HTMLAnchorElement;
   statusText: HTMLParagraphElement;
   previewImage: HTMLImageElement;
+  resultBox: HTMLDivElement;
   overlay: HTMLDivElement;
 };
 
@@ -206,6 +207,7 @@ export function createWidgetUi(config: {
 
   const resultBox = document.createElement("div");
   resultBox.className = "fitview-result";
+  resultBox.style.display = "none";
   const previewImage = document.createElement("img");
   previewImage.alt = "FitView result";
   previewImage.setAttribute("data-visible", "false");
@@ -233,7 +235,7 @@ export function createWidgetUi(config: {
 
   actions.append(submitButton, retryButton, downloadLink);
 
-  modal.append(header, dropzone, statusText, resultBox, actions);
+  modal.append(header, dropzone, statusText, actions, resultBox);
   overlay.append(modal);
 
   shadow.append(style, openButton, overlay);
@@ -251,6 +253,7 @@ export function createWidgetUi(config: {
     downloadLink,
     statusText,
     previewImage,
+    resultBox,
     overlay
   };
 }

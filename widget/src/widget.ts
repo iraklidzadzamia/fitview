@@ -31,6 +31,7 @@ export function mountWidget(config: WidgetConfig) {
   const resetResultView = () => {
     ui.previewImage.removeAttribute("src");
     ui.previewImage.setAttribute("data-visible", "false");
+    ui.resultBox.style.display = "none";
     ui.downloadLink.removeAttribute("href");
     ui.downloadLink.style.display = "none";
     ui.retryButton.style.display = "none";
@@ -125,6 +126,7 @@ export function mountWidget(config: WidgetConfig) {
         setProgress("Done.");
         ui.previewImage.src = settled.data.resultImageUrl;
         ui.previewImage.setAttribute("data-visible", "true");
+        ui.resultBox.style.display = "block";
         ui.downloadLink.href = settled.data.resultImageUrl;
         ui.downloadLink.style.display = "inline-flex";
         ui.retryButton.style.display = "inline-flex";
