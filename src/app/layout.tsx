@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { parseEnv } from "@/lib/config/env";
 import "./globals.css";
+
+parseEnv(process.env);
 
 export const metadata: Metadata = {
   title: "FitView",
