@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String?
+  image        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  stores   Store[]
+  accounts Account[]
+  sessions Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Store {
+  id                   String   @id @default(cuid())
+  name                 String
+  allowedOrigins       String[] @default([])
+  apiKeyHash           String   @unique
+  apiKeyPrefix         String
+  plan                 Plan     @default(STARTER)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  stripeCustomerId     String?  @unique
+  stripeSubscriptionId String?  @unique
+  tryonsThisMonth      Int      @default(0)
+  monthResetAt         DateTime @default(now())
+  widgetConfig         Json?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  items       CatalogItem[]
+  tryons      TryOn[]
+  apiKeyAudit ApiKeyAudit[]
+
+  @@index([userId])
+}
+
+model ApiKeyAudit {
+  id           String    @id @default(cuid())
+  storeId      String
+  apiKeyPrefix String
+  createdAt    DateTime  @default(now())
+  revokedAt    DateTime?
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId, createdAt])
+}
+
+model CatalogItem {
+  id           String   @id @default(cuid())
+  name         String
+  category     Category
+  imageUrl     String
+  processedUrl String?
+  price        Float?
+  externalUrl  String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  tryons TryOn[]
+
+  @@index([storeId])
+}
+
+model TryOn {
+  id                 String      @id @default(cuid())
+  status             TryOnStatus @default(PENDING)
+  userPhotoUrl       String
+  userPhotoExpiresAt DateTime
+  catalogItemId      String
+  resultImageUrl     String?
+  resultExpiresAt    DateTime?
+  processingTime     Int?
+  error              String?
+  createdAt          DateTime    @default(now())
+  completedAt        DateTime?
+
+  storeId String
+  store   Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  item    CatalogItem @relation(fields: [catalogItemId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([storeId, createdAt])
+}
+
+enum Plan {
+  STARTER
+  PRO
+  ENTERPRISE
+}
+
+enum Category {
+  TOP
+  BOTTOM
+  DRESS
+  OUTERWEAR
+}
+
+enum TryOnStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
