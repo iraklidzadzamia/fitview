@@ -10,7 +10,7 @@
     return;
   }
 
-  const apiBase = scriptTag.getAttribute("data-api-base") ?? "https://app.fitview.ai/api/public";
+  const apiBase = scriptTag.getAttribute("data-api-base") ?? "https://fitview-one.vercel.app/api/public";
   const buttonText = scriptTag.getAttribute("data-button-text") ?? "Try it on";
   const buttonColor = scriptTag.getAttribute("data-button-color") ?? "#2563eb";
 
