@@ -60,7 +60,7 @@ export function WidgetConfigurator() {
 
   const embedSnippet = `<script
   src="https://cdn.fitview.ai/widget.js"
-  data-api-key="${apiKey ?? store?.apiKeyPrefix + "...redacted" ?? "YOUR_API_KEY"}"
+  data-api-key="${apiKey ?? (store?.apiKeyPrefix ? store.apiKeyPrefix + "...redacted" : "YOUR_API_KEY")}"
   data-button-text="Try it on"
   data-button-color="#2563eb"
   async
